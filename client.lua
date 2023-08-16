@@ -1,105 +1,110 @@
-local trippedLights = {} -- Stores the tripped traffic lights
+local emergencyVehicleModels = {
+    "police",
+    "ambulance",
+    -- Add more emergency vehicle models here
+}
 
--- Function to check if a vehicle model is whitelisted
-function IsVehicleWhitelisted(model)
-    if Config.UseWhitelist then
-        for _, whitelistedModel in ipairs(Config.EmergencyVehicleWhitelist) do
-            if GetHashKey(model) == GetHashKey(whitelistedModel) then
-                return true
-            end
-        end
-    end
-    return false
-end
+local opticomRadius = 50.0
+local opticomActive = false
 
--- Function to check if a vehicle model is blacklisted
-function IsVehicleBlacklisted(model)
-    for _, blacklistedModel in ipairs(Config.BlacklistedVehicles) do
-        if GetHashKey(model) == GetHashKey(blacklistedModel) then
-            return true
-        end
-    end
-    return false
-end
+local trafficLightStates = {
+    ["green"] = { duration = 10 },
+    ["yellow"] = { duration = 3 },
+    ["red"] = { duration = 15 }
+}
 
--- Function to check if a vehicle is an emergency vehicle
-function IsEmergencyVehicle(vehicle)
-    local model = GetEntityModel(vehicle)
-    return IsVehicleWhitelisted(model) and not IsVehicleBlacklisted(model)
-end
-
--- Function to stop traffic at tripped lights
-function StopTrafficAtLights(lights)
-    if Config.EnableTrafficControl then
-        for _, light in ipairs(lights) do
-            SetTrafficLightsLocked(light.object, true)
-        end
-        Citizen.Wait(Config.TrafficStopDuration)
-        for _, light in ipairs(lights) do
-            SetTrafficLightsLocked(light.object, false)
-        end
-    end
-end
-
--- Function to reset tripped lights and traffic
-function ResetLightsAndTraffic()
-    for _, light in ipairs(trippedLights) do
-        SetEntityTrafficlightOverride(light.object, -1)
-    end
-    trippedLights = {}
-    ResetTrafficLights()
-end
-
--- Function to detect and handle traffic lights
-function HandleTrafficLights()
-    local player = PlayerPedId()
-    local vehicle = GetVehiclePedIsIn(player, false)
-
-    if IsPedInAnyVehicle(player) and IsEmergencyVehicle(vehicle) then
-        local coords = GetEntityCoords(vehicle)
-
-        -- Search for nearby traffic lights
-        for _, model in ipairs(Config.TrafficLightModels) do
-            local trafficLights = GetClosestObjectOfType(coords, Config.DetectionDistance, GetHashKey(model), false, false, false)
-
-            for _, light in ipairs(trafficLights) do
-                local lightCoords = GetEntityCoords(light)
-                local distance = #(coords - lightCoords)
-
-                if distance <= Config.DetectionRange and not trippedLights[light] then
-                    trippedLights[light] = true
-                    SetEntityTrafficlightOverride(light, 0) -- Change the light to green
-
-                    -- Debug message
-                    TriggerEvent('chat:addMessage', {
-                        args = { '^2Opticom:', 'Traffic light tripped!' }
-                    })
+Citizen.CreateThread(function()
+    while true do
+        Citizen.Wait(0)
+        
+        local playerPed = GetPlayerPed(-1)
+        local playerVehicle = GetVehiclePedIsIn(playerPed, false)
+        
+        if playerVehicle then
+            local modelHash = GetEntityModel(playerVehicle)
+            local modelName = GetDisplayNameFromVehicleModel(modelHash)
+            
+            if IsVehicleAnEmergencyVehicle(playerVehicle) then
+                local coords = GetEntityCoords(playerVehicle)
+                local nearbyLights = GetNearbyTrafficLights(coords, opticomRadius)
+                
+                if #nearbyLights > 0 then
+                    TriggerEvent("opticom:activate", nearbyLights)
                 end
             end
         end
     end
+end)
+
+function GetNearbyTrafficLights(coords, radius)
+    local lights = {}
+    local objects = GetGamePool("CObject")
+    
+    for _, object in ipairs(objects) do
+        if IsObjectAnEntity(object) and IsEntityAVehicle(object) == false then
+            local objCoords = GetEntityCoords(object)
+            local distance = Vdist2(objCoords, coords)
+            
+            if distance <= radius * radius then
+                table.insert(lights, object)
+            end
+        end
+    end
+    
+    return lights
 end
 
--- Main thread
-Citizen.CreateThread(function()
-    while true do
-        Citizen.Wait(0)
-        HandleTrafficLights()
+RegisterNetEvent("opticom:activate")
+AddEventHandler("opticom:activate", function(lights)
+    if opticomActive then return end
+    
+    opticomActive = true
+    for _, light in ipairs(lights) do
+        ChangeTrafficLightState(light, "green")
     end
+    
+    StopAIVehiclesNearPlayer()
+    
+    Citizen.Wait(5000) -- Simulate Opticom duration
+    opticomActive = false
 end)
 
--- Traffic control and reset threads
-Citizen.CreateThread(function()
-    while true do
-        Citizen.Wait(Config.ResetDelay)
-        ResetLightsAndTraffic()
+function ChangeTrafficLightState(light, state)
+    if DoesEntityExist(light) then
+        -- Change traffic light state based on the specified duration
+        local duration = trafficLightStates[state].duration
+        SetTrafficLightState(light, state)
+        
+        Citizen.Wait(duration * 1000)
+        
+        if state ~= "red" then
+            ChangeTrafficLightState(light, "red")
+        end
     end
-end)
+end
 
--- Traffic stop thread
-Citizen.CreateThread(function()
-    while true do
-        Citizen.Wait(0)
-        StopTrafficAtLights(trippedLights)
+function SetTrafficLightState(light, state)
+    if state == "green" then
+        -- Set traffic light state to green
+    elseif state == "yellow" then
+        -- Set traffic light state to yellow
+    elseif state == "red" then
+        -- Set traffic light state to red
     end
-end)
+end
+
+function StopAIVehiclesNearPlayer()
+    local playerPed = GetPlayerPed(-1)
+    local playerCoords = GetEntityCoords(playerPed)
+    local aiVehicles = GetGamePool("CVehicle")
+    
+    for _, vehicle in ipairs(aiVehicles) do
+        local vehicleCoords = GetEntityCoords(vehicle)
+        local distance = Vdist2(vehicleCoords, playerCoords)
+        
+        if distance <= opticomRadius * opticomRadius then
+            SetVehicleForwardSpeed(vehicle, 0.0)
+            TaskWarpPedIntoVehicle(playerPed, vehicle, -1)
+        end
+    end
+end

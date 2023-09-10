@@ -1,4 +1,5 @@
 # CodeX Opticom
+![codex-opticom](https://github.com/5M-CodeX/codex-opticom/assets/112611821/f309030c-8951-4ce2-8d18-079b4508b02a)
 
 This Lua script is designed for controlling traffic lights in a game environment. It allows you to interact with traffic lights, change them to green, and automatically reset them to red after a specified duration.
 

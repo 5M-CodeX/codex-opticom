@@ -1,0 +1,26 @@
+**5MCodeX Strict License v1.0**
+
+Copyright (c) 2023 5MCodeX
+
+Permission is hereby expressly denied to any person obtaining a copy of this software and associated documentation files (the "Software"). No rights are granted, and any use, reproduction, modification, distribution, sublicensing, or sale of the Software in any form, in whole or in part, is strictly prohibited without the explicit, written permission of the author (5MCodeX).
+
+**No Warranty:**
+   - The Software is provided "as is," without warranty of any kind, express or implied, including but not limited to the warranties of merchantability, fitness for a particular purpose, and noninfringement. The entire risk as to the quality and performance of the Software is with the user.
+
+**Liability:**
+   - In no event shall the authors or copyright holders be liable for any claim, damages, or other liability, whether in an action of contract, tort, or otherwise, arising from, out of, or in connection with the Software or the use or other dealings in the Software.
+
+**No Reverse Engineering:**
+   - Users are explicitly prohibited from reverse engineering, decompiling, or disassembling the Software.
+
+**No Redistribution:**
+   - Users are prohibited from redistributing the Software, whether modified or unmodified.
+
+**No Commercial Use:**
+   - Commercial use of the Software is strictly prohibited without explicit, written permission from the author (5MCodeX).
+
+**Legal Recourse:**
+   - Violations of this license may result in legal action.
+
+**Governing Law:**
+   - This license shall be governed by and construed in accordance with the laws of Oregon, and any disputes relating to this license shall be subject to the exclusive jurisdiction of the courts of Oregon.
